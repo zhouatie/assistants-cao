@@ -2,7 +2,6 @@
  * 终端相关的辅助函数
  */
 
-
 import chalk from 'chalk';
 
 /**
@@ -18,13 +17,17 @@ export function getTerminalSize(): [number, number] {
 }
 
 /**
- * 获取字符串在终端中的显示宽度，考虑中文等宽字符
+ * 获取字符串在终端中的显示宽度，考虑中文等宽字符和ANSI颜色代码
  * @param s 字符串
  * @returns 显示宽度
  */
 export function getStringDisplayWidth(s: string): number {
+    // 去除所有ANSI颜色代码
+    // eslint-disable-next-line no-control-regex
+    const cleanString = s.replace(/\u001b\[\d+(;\d+)*m/g, '');
+
     let width = 0;
-    for (const char of s) {
+    for (const char of cleanString) {
         // 中文字符宽字符通常显示宽度为2
         if (char.charCodeAt(0) > 127) {
             width += 2;

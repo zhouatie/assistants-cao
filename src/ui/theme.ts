@@ -4,6 +4,7 @@
 import chalk from 'chalk';
 import Table from 'cli-table3';
 import { stdout } from 'process';
+import { getStringDisplayWidth } from '../utils/terminal';
 
 /**
  * 获取终端窗口宽度
@@ -152,7 +153,8 @@ export function createInfoBox(
     }
 
     const lines = text.split('\n');
-    const maxLength = Math.max(...lines.map(line => line.length));
+    // 使用getStringDisplayWidth来计算包含中文等宽字符的实际显示宽度
+    const maxLength = Math.max(...lines.map(line => getStringDisplayWidth(line)));
 
     const table = new Table({
         chars: {
@@ -178,6 +180,7 @@ export function createInfoBox(
             'padding-left': 1,
             'padding-right': 1,
         },
+        // 使用getStringDisplayWidth计算出的实际显示宽度加上内边距
         colWidths: [maxLength + 4],
     });
 
@@ -246,7 +249,8 @@ export function createTable(
         // 为可截断列分配剩余宽度
         if (apiBaseIndex !== -1) {
             const apiColumnWidth = availableWidth - fixedColumnsWidth;
-            colWidths[apiBaseIndex] = Math.max(10, apiColumnWidth); // 至少10个字符宽度
+            // 当宽度不够时设为较小值，内容会自动换行
+            colWidths[apiBaseIndex] = apiColumnWidth > 0 ? apiColumnWidth : 1; // 允许内容换行
         }
 
         // 确保所有列都有宽度
