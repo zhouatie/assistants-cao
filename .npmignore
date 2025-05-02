@@ -1,0 +1,14 @@
+src/
+tests/
+coverage/
+.github/
+.git/
+.vscode/
+.idea/
+.DS_Store
+*.log
+tsconfig.json
+jest.config.js
+.eslintrc.js
+.editorconfig
+*.tgz
