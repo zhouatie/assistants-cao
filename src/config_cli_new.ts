@@ -21,11 +21,9 @@ import {
  * 列出所有配置的模型
  */
 export function listModels(): void {
-    // 强制重新从文件加载配置，确保获取最新数据
-    const models = config.getSupportedModels();
-    const defaultModel = config.getDefaultModel();
-
-    console.log(showModelList(models, defaultModel));
+    // 直接调用新的列出模型命令
+    const { listAllModels } = require('./commands/list_models');
+    listAllModels();
 }
 
 /**

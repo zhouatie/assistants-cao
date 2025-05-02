@@ -28,6 +28,15 @@ export function main(): void {
         logger.level = 'debug';
         debug('调试模式已启用');
     }
+    
+    // 如果用户请求列出模型，则显示所有配置的模型
+    if (options.listModels) {
+        import('../commands/list_models').then(modelsList => {
+            modelsList.listAllModels();
+            process.exit(0);
+        });
+        return;
+    }
 
     // 如果用户请求配置，则运行增强版配置界面
     if (options.config) {

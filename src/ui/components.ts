@@ -92,7 +92,7 @@ export async function showMainMenu(): Promise<string> {
  * @returns 渲染后的模型列表
  */
 export function showModelList(models: { [key: string]: any }, defaultModel: string): string {
-    console.log(createSubTitle(' 已配置的模型 '));
+    let output = createSubTitle(' 已配置的模型 ') + '\n\n';
     
     const headers = ['模型名称', '默认', 'API基础URL', '模型标识符'];
     
@@ -103,7 +103,8 @@ export function showModelList(models: { [key: string]: any }, defaultModel: stri
         config.model
     ]);
     
-    return createTable(headers, rows);
+    output += createTable(headers, rows);
+    return output;
 }
 
 /**
@@ -235,6 +236,10 @@ export async function showDefaultModelMenu(
     
     // 显示当前默认模型
     console.log(createInfoBox(`当前默认模型: ${theme.highlight(currentDefault)}`, 'info'));
+    console.log('');
+    
+    // 显示所有模型列表，让用户一目了然当前配置
+    console.log(showModelList(models, currentDefault));
     console.log('');
     
     // 为模型添加标记，显示当前默认
