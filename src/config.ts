@@ -164,7 +164,7 @@ export function removeModel(name: string): boolean {
     delete config.models[name];
     
     // 确保配置已保存
-    const result = saveConfig(config);
+    saveConfig(config);
     
     // 验证删除是否成功
     const updatedConfig = loadConfig();

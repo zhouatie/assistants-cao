@@ -3,9 +3,6 @@
  * 导入增强版配置界面
  */
 
-import * as fs from 'fs';
-import inquirer from 'inquirer';
-import * as config from './config';
 import { runConfigCli as runNewConfigCli } from './config_cli_new';
 
 // 使用增强版配置CLI替代当前版本

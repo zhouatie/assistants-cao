@@ -7,7 +7,6 @@ import * as config from './config';
 import { 
     showWelcomeScreen, 
     showMainMenu, 
-    showModelList, 
     showAddModelForm,
     showDeleteModelMenu,
     showDefaultModelMenu,
@@ -22,6 +21,7 @@ import {
  */
 export function listModels(): void {
     // 直接调用新的列出模型命令
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { listAllModels } = require('./commands/list_models');
     listAllModels();
 }
