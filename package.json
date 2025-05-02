@@ -1,11 +1,20 @@
 {
-    "name": "ts-cao",
+    "name": "assistants-cao",
     "version": "1.0.0",
+    "private": false,
+    "publishConfig": {
+        "access": "public"
+    },
     "description": "命令行工具，程序员编程伴侣",
     "main": "dist/index.js",
     "bin": {
         "cao": "dist/cli/main.js"
     },
+    "files": [
+        "dist/**/*",
+        "LICENSE",
+        "README.md"
+    ],
     "scripts": {
         "build": "tsc",
         "start": "node dist/cli/main.js",
@@ -14,7 +23,13 @@
         "lint": "eslint . --ext .ts --fix",
         "format": "prettier --write \"src/**/*.ts\"",
         "format:check": "prettier --check \"src/**/*.ts\"",
-        "prepare": "npm run build"
+        "prepare": "npm run build",
+        "change": "modern change",
+        "bump": "modern bump",
+        "pre": "modern pre",
+        "releaseBeta": "npm run build && modern release --ignore-scripts --tag beta && git push --follow-tags",
+        "releaseAlpha": "npm run build && modern release --ignore-scripts --tag alpha && git push --follow-tags",
+        "release": "npm run build && modern release --ignore-scripts && git push --follow-tags"
     },
     "keywords": [
         "cli",
@@ -25,6 +40,7 @@
     "author": "",
     "license": "MIT",
     "devDependencies": {
+        "@modern-js/module-tools": "1.17.0",
         "@types/inquirer": "^9.0.7",
         "@types/jest": "^29.5.10",
         "@types/node": "^20.10.0",
@@ -46,6 +62,9 @@
         "inquirer": "^8.2.6",
         "node-fetch": "^2.7.0",
         "prompts": "^2.4.2"
+    },
+    "engines": {
+        "node": ">=14.0.0"
     },
     "packageManager": "yarn@1.22.19+sha1.4ba7fc5c6e704fce2066ecbfb0b0d8976fe62447"
 }

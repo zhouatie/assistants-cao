@@ -4,19 +4,19 @@
 
 ## 功能
 
--   支持与多种角色对话（可以向他们寻求帮助）
--   支持多种 AI 模型（ollama、deepseek、openai）
+- 支持与多种角色对话（可以向他们寻求帮助）
+- 支持多种 AI 模型（ollama、deepseek、openai）
 
 ## 系统要求
 
--   Node.js 18+
+- Node.js 18+
 
 ## 安装
 
 ### 通过 npm 全局安装
 
 ```bash
-npm install -g ts-cao
+npm install -g assistants-cao
 ```
 
 ## 使用方法
@@ -34,12 +34,12 @@ cao -m ollama
 
 支持的模型:
 
--   ollama (默认)(本地运行)
--   deepseek
--   openai
--   以及任何支持OpenAI兼容API的模型，如:
-    -   anthropic
-    -   等更多通过自定义配置添加的模型
+- ollama (默认)(本地运行)
+- deepseek
+- openai
+- 以及任何支持OpenAI兼容API的模型，如:
+    - anthropic
+    - 等更多通过自定义配置添加的模型
 
 ### 配置 AI 模型
 
@@ -49,10 +49,10 @@ cao --config
 
 这将启动交互式配置界面，您可以在其中:
 
--   添加/更新模型配置
--   删除不需要的模型
--   设置默认模型
--   查看当前配置的所有模型
+- 添加/更新模型配置
+- 删除不需要的模型
+- 设置默认模型
+- 查看当前配置的所有模型
 
 ### 开启调试模式
 
@@ -80,15 +80,15 @@ cao -d
 
 注意：
 
--   使用Ollama模型不需要设置API密钥，因为它在本地运行
--   API提供商名称会自动从API基础URL中提取，例如`api.openai.com` → 使用`OPENAI_API_KEY`
+- 使用Ollama模型不需要设置API密钥，因为它在本地运行
+- API提供商名称会自动从API基础URL中提取，例如`api.openai.com` → 使用`OPENAI_API_KEY`
 
 ## 本地开发与调试
 
 ```bash
 # 克隆仓库
 git clone <repository-url>
-cd ts-cao
+cd cao
 
 # 安装依赖
 npm install
@@ -105,8 +105,8 @@ npx ts-node src/cli/main.ts
 
 ## 功能
 
--   [x] 自定义配置 AI 模型
--   [x] 支持与ai持续性对话
+- [x] 自定义配置 AI 模型
+- [x] 支持与ai持续性对话
 
 ## 许可证
 
