@@ -2,6 +2,7 @@
  * UI 主题配置
  */
 import chalk from 'chalk';
+import Table from 'cli-table3';
 
 export const theme = {
     // 主要颜色
@@ -33,16 +34,32 @@ export const theme = {
     divider: chalk.hex('#E2E8F0'),
 };
 
+// cli-table3 表格样式配置
+export const tableStyle = {
+    chars: {
+        'top': '━', 'top-mid': '┳', 'top-left': '┏', 'top-right': '┓',
+        'bottom': '━', 'bottom-mid': '┻', 'bottom-left': '┗', 'bottom-right': '┛',
+        'left': '┃', 'left-mid': '┣', 'mid': '━', 'mid-mid': '╋',
+        'right': '┃', 'right-mid': '┫', 'middle': '┃'
+    },
+    style: {
+        'padding-left': 1,
+        'padding-right': 1,
+        head: ['bold'],
+        border: [theme.border('')],
+    }
+};
+
 /**
  * 创建标题
  * @param text 标题文本
  * @returns 格式化后的标题
  */
 export function createTitle(text: string): string {
-    const line = '═'.repeat(text.length + 8);
+    const line = '━'.repeat(text.length + 8);
     return `
 ${theme.primary(line)}
-${theme.primary('═══')} ${theme.title(text)} ${theme.primary('═══')}
+${theme.primary('━━━')} ${theme.title(text)} ${theme.primary('━━━')}
 ${theme.primary(line)}`;
 }
 
@@ -52,9 +69,24 @@ ${theme.primary(line)}`;
  * @returns 格式化后的副标题
  */
 export function createSubTitle(text: string): string {
-    return `${theme.heading('┌' + '─'.repeat(text.length + 2) + '┐')}
-${theme.heading('│')} ${theme.subtitle(text)} ${theme.heading('│')}
-${theme.heading('└' + '─'.repeat(text.length + 2) + '┘')}`;
+    const table = new Table({
+        chars: {
+            'top': '━', 'top-mid': '━', 'top-left': '┏', 'top-right': '┓',
+            'bottom': '━', 'bottom-mid': '━', 'bottom-left': '┗', 'bottom-right': '┛',
+            'left': '┃', 'left-mid': '┃', 'mid': '━', 'mid-mid': '━',
+            'right': '┃', 'right-mid': '┃', 'middle': ' '
+        },
+        style: {
+            head: [],
+            border: [theme.heading('')],
+            'padding-left': 1,
+            'padding-right': 1
+        },
+        colWidths: [text.length + 2]
+    });
+
+    table.push([theme.subtitle(text)]);
+    return table.toString();
 }
 
 /**
@@ -87,12 +119,32 @@ export function createInfoBox(text: string, type: 'info' | 'success' | 'warning'
     
     const lines = text.split('\n');
     const maxLength = Math.max(...lines.map(line => line.length));
-    const border = '─'.repeat(maxLength + 4);
     
-    return `${colorFn('┌' + border + '┐')}
-${colorFn('│')}  ${icon} ${lines[0].padEnd(maxLength, ' ')}  ${colorFn('│')}
-${lines.slice(1).map(line => `${colorFn('│')}    ${line.padEnd(maxLength, ' ')}  ${colorFn('│')}`).join('\n')}
-${colorFn('└' + border + '┘')}`;
+    const table = new Table({
+        chars: {
+            'top': '━', 'top-mid': '━', 'top-left': '┏', 'top-right': '┓',
+            'bottom': '━', 'bottom-mid': '━', 'bottom-left': '┗', 'bottom-right': '┛',
+            'left': '┃', 'left-mid': '┃', 'mid': '━', 'mid-mid': '━',
+            'right': '┃', 'right-mid': '┃', 'middle': ' '
+        },
+        style: {
+            head: [],
+            border: [colorFn('')],
+            'padding-left': 1,
+            'padding-right': 1
+        },
+        colWidths: [maxLength + 4]
+    });
+
+    // 添加第一行带有图标
+    table.push([`${icon} ${lines[0]}`]);
+    
+    // 添加其余行
+    lines.slice(1).forEach(line => {
+        table.push([`  ${line}`]);
+    });
+
+    return table.toString();
 }
 
 /**
@@ -110,23 +162,14 @@ export function createTable(
         highlightValue?: string 
     } = {}
 ): string {
-    // 计算每列宽度
-    const widths = headers.map((header, i) => 
-        Math.max(
-            header.length,
-            ...rows.map(row => row[i]?.toString().length || 0)
-        )
-    );
+    const table = new Table({
+        head: headers.map(header => theme.heading(header)),
+        ...tableStyle
+    });
     
-    // 创建分隔线
-    const divider = '+' + widths.map(w => '─'.repeat(w + 2)).join('+') + '+';
-    
-    // 创建表头
-    const headerRow = '│ ' + headers.map((h, i) => theme.heading(h.padEnd(widths[i]))).join(' │ ') + ' │';
-    
-    // 创建数据行
-    const dataRows = rows.map((row, rowIndex) => {
-        return '│ ' + row.map((cell, colIndex) => {
+    // 添加数据行
+    rows.forEach((row, rowIndex) => {
+        const formattedRow = row.map((cell, colIndex) => {
             const value = cell?.toString() || '';
             
             // 根据配置高亮特定行或值
@@ -134,20 +177,16 @@ export function createTable(
                 (options.highlightIndex !== undefined && rowIndex === options.highlightIndex) ||
                 (options.highlightValue !== undefined && value === options.highlightValue)
             ) {
-                return theme.highlight(value.padEnd(widths[colIndex]));
+                return theme.highlight(value);
             }
             
-            return theme.text(value.padEnd(widths[colIndex]));
-        }).join(' │ ') + ' │';
+            return theme.text(value);
+        });
+        
+        table.push(formattedRow);
     });
     
-    return [
-        theme.border(divider),
-        theme.border(headerRow),
-        theme.border(divider),
-        ...dataRows.map(row => theme.border(row)),
-        theme.border(divider)
-    ].join('\n');
+    return table.toString();
 }
 
 /**

@@ -43,6 +43,11 @@ export async function interactiveConfig(): Promise<void> {
                 // 添加/更新模型
                 const modelData = await showAddModelForm();
                 
+                // 用户选择返回主菜单
+                if (modelData === null) {
+                    break;
+                }
+                
                 // 使用API密钥为undefined时，表示留空使用环境变量
                 const result = config.addModel(
                     modelData.name,
@@ -92,6 +97,11 @@ export async function interactiveConfig(): Promise<void> {
                 const currentDefault = config.getDefaultModel();
                 
                 const newDefault = await showDefaultModelMenu(models, currentDefault);
+                
+                // 用户选择返回主菜单
+                if (newDefault === null) {
+                    break;
+                }
                 
                 if (newDefault === currentDefault) {
                     showResult(`'${newDefault}' 已经是默认模型`, 'info');

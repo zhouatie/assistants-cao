@@ -109,11 +109,41 @@ export function showModelList(models: { [key: string]: any }, defaultModel: stri
 
 /**
  * 添加模型表单
- * @returns Promise 解析为用户输入的模型数据
+ * @returns Promise 解析为用户输入的模型数据或null（表示返回主菜单）
  */
-export async function showAddModelForm() {
+export async function showAddModelForm(): Promise<{
+    name: string;
+    apiBase: string;
+    model: string;
+    apiKey: string | undefined;
+} | null> {
     console.clear();
     console.log(createTitle('添加/更新模型配置'));
+    
+    // 首先询问是否要返回主菜单
+    const { action } = await inquirer.prompt([
+        {
+            type: 'list',
+            name: 'action',
+            message: theme.primary('请选择:'),
+            choices: [
+                { 
+                    name: `${theme.primary('➕')} 添加/更新模型配置`, 
+                    value: 'continue',
+                    short: '添加/更新模型'
+                },
+                { 
+                    name: `${theme.secondary('↩️')} 返回主菜单`, 
+                    value: 'cancel',
+                    short: '返回'
+                }
+            ]
+        }
+    ]);
+    
+    if (action === 'cancel') {
+        return null;
+    }
     
     const answers = await inquirer.prompt([
         {
@@ -225,12 +255,12 @@ export async function showDeleteModelMenu(models: string[]): Promise<string | nu
  * 设置默认模型选择
  * @param models 模型列表
  * @param currentDefault 当前默认模型
- * @returns Promise 解析为用户选择的模型名称
+ * @returns Promise 解析为用户选择的模型名称或null（表示返回主菜单）
  */
 export async function showDefaultModelMenu(
     models: { [key: string]: any }, 
     currentDefault: string
-): Promise<string> {
+): Promise<string | null> {
     console.clear();
     console.log(createTitle('设置默认模型'));
     
@@ -243,13 +273,21 @@ export async function showDefaultModelMenu(
     console.log('');
     
     // 为模型添加标记，显示当前默认
-    const choices = Object.keys(models).map(name => ({
-        name: name === currentDefault ? 
-            `${theme.success('✓')} ${name} ${theme.info('(当前默认)')}` : 
-            `${theme.info('○')} ${name}`,
-        value: name,
-        short: name
-    }));
+    const choices = [
+        ...Object.keys(models).map(name => ({
+            name: name === currentDefault ? 
+                `${theme.success('✓')} ${name} ${theme.info('(当前默认)')}` : 
+                `${theme.info('○')} ${name}`,
+            value: name,
+            short: name
+        })),
+        new inquirer.Separator(),
+        {
+            name: `${theme.secondary('↩️')} 返回主菜单`,
+            value: 'cancel',
+            short: '返回'
+        }
+    ];
     
     const { newDefault } = await inquirer.prompt([
         {
@@ -262,7 +300,7 @@ export async function showDefaultModelMenu(
         }
     ]);
     
-    return newDefault;
+    return newDefault === 'cancel' ? null : newDefault;
 }
 
 /**
