@@ -9,32 +9,54 @@ import * as config from '../config';
 import { getLogger, debug } from '../utils/logger';
 import { parseArgs } from './parser';
 import { handleInteractiveSession } from './interactive';
+import { handleSinglePrompt } from './single_prompt';
 
 // 获取日志记录器
 const logger = getLogger('cli/main');
 
 // 主函数
 export function main(): void {
+    // 创建命令行程序
     const program = new Command();
     parseArgs(program);
     const options = program.opts();
-
-    // 如果用户请求配置，则运行配置界面
-    if (options.config) {
-        // 使用import语法替代require
-        import('../config_cli').then(configCli => {
-            configCli.interactiveConfig();
-            process.exit(0);
-        });
-        return;
-    }
-
+    
     // 如果设置了调试标志，则设置环境变量以便在整个执行过程中使用
     if (options.debug) {
         process.env.CAO_DEBUG_MODE = '1';
         process.env.CAO_LOG_LEVEL = 'DEBUG';
         logger.level = 'debug';
         debug('调试模式已启用');
+    }
+
+    // 如果用户请求配置，则运行配置界面
+    if (options.config) {
+        // 使用import语法替代require
+        import('../config_cli').then(async configCli => {
+            await configCli.interactiveConfig();
+            process.exit(0);
+        });
+        return;
+    }
+    
+    // 如果用户提供了直接提示，则处理单次AI交互
+    if (options.prompt) {
+        // 初始化模型配置
+        const SUPPORTED_MODELS = config.getSupportedModels();
+        const modelName = options.model;
+        const modelConfig = SUPPORTED_MODELS[modelName];
+        if (!modelConfig.provider) {
+            modelConfig.provider = modelName;
+        }
+
+        // 处理单次提示并退出
+        handleSinglePrompt(options.prompt, modelConfig)
+            .then(() => process.exit(0))
+            .catch(err => {
+                console.error(`处理提示时出错: ${err.message}`);
+                process.exit(1);
+            });
+        return;
     }
 
     // 初始化配置

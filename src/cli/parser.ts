@@ -19,5 +19,6 @@ export function parseArgs(program: Command): void {
         .option('-m, --model <model>', `选择 AI 模型 (默认: ${DEFAULT_MODEL})`, DEFAULT_MODEL)
         .option('-d, --debug', '开启调试模式')
         .option('--config', '配置 AI 模型')
+        .option('-p, --prompt <prompt>', '直接发送提示给 AI 并获取回复')
         .parse(process.argv);
 }

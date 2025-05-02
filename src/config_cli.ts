@@ -3,14 +3,14 @@
  */
 
 import * as fs from 'fs';
-
-import * as readline from 'readline';
+import inquirer from 'inquirer';
 import * as config from './config';
 
 /**
  * 列出所有配置的模型
  */
 export function listModels(): void {
+    // 强制重新从文件加载配置，确保获取最新数据
     const models = config.getSupportedModels();
     const defaultModel = config.getDefaultModel();
 
@@ -35,20 +35,6 @@ export function listModels(): void {
  * 交互式配置模式
  */
 export async function interactiveConfig(): Promise<void> {
-    const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout,
-    });
-
-    // 封装readline的question方法为Promise
-    function question(query: string): Promise<string> {
-        return new Promise(resolve => {
-            rl.question(query, answer => {
-                resolve(answer);
-            });
-        });
-    }
-
     console.log('\n欢迎使用 cao 配置向导！');
     console.log('='.repeat(50));
 
@@ -57,69 +43,111 @@ export async function interactiveConfig(): Promise<void> {
 
     let continueLoop = true;
     while (continueLoop) {
-        console.log('\n可用操作:');
-        console.log('1. 添加/更新模型');
-        console.log('2. 删除模型');
-        console.log('3. 设置默认模型');
-        console.log('4. 退出');
+        // 主菜单选项
+        const { action } = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'action',
+                message: '请选择操作:',
+                choices: [
+                    { name: '添加/更新模型', value: '1' },
+                    { name: '删除模型', value: '2' },
+                    { name: '设置默认模型', value: '3' },
+                    { name: '退出', value: '4' }
+                ]
+            }
+        ]);
 
-        const choice = await question('\n请选择操作 [1-4]: ');
-
-        switch (choice.trim()) {
+        switch (action) {
             case '1': {
-                const name = await question('输入供应商名称(英文): ');
-                const apiBase = await question('输入 API 基础 URL: ');
-                const model = await question('输入模型名称: ');
-                const apiKey = await question('输入API密钥 (可选，留空则使用环境变量): ');
-
-                if (name && apiBase && model) {
-                    // 如果API密钥为空，传递undefined
-                    const result = config.addModel(
-                        name.trim(),
-                        apiBase.trim(),
-                        model.trim(),
-                        apiKey.trim() || undefined
-                    );
-                    if (result) {
-                        console.log(`已成功添加/更新模型 '${name}'`);
-                    } else {
-                        console.log(`添加/更新模型 '${name}' 失败`);
+                // 添加/更新模型
+                const answers = await inquirer.prompt([
+                    {
+                        type: 'input',
+                        name: 'name',
+                        message: '输入供应商名称(英文):',
+                        validate: (input: string) => input.trim() !== '' ? true : '供应商名称不能为空'
+                    },
+                    {
+                        type: 'input',
+                        name: 'apiBase',
+                        message: '输入 API 基础 URL:',
+                        validate: (input: string) => input.trim() !== '' ? true : 'API 基础 URL 不能为空'
+                    },
+                    {
+                        type: 'input',
+                        name: 'model',
+                        message: '输入模型名称:',
+                        validate: (input: string) => input.trim() !== '' ? true : '模型名称不能为空'
+                    },
+                    {
+                        type: 'input',
+                        name: 'apiKey',
+                        message: '输入API密钥 (可选，留空则使用环境变量):',
                     }
+                ]);
+
+                // 如果API密钥为空，传递undefined
+                const result = config.addModel(
+                    answers.name.trim(),
+                    answers.apiBase.trim(),
+                    answers.model.trim(),
+                    answers.apiKey.trim() || undefined
+                );
+                
+                if (result) {
+                    console.log(`已成功添加/更新模型 '${answers.name}'`);
                 } else {
-                    console.log('错误: 供应商名称、API基础URL和模型名称都必须填写');
+                    console.log(`添加/更新模型 '${answers.name}' 失败`);
                 }
                 break;
             }
 
             case '2': {
+                // 删除模型
                 const models = config.getSupportedModels();
                 const defaultModel = config.getDefaultModel();
-
-                console.log('\n可移除的模型:');
-                for (const modelName of Object.keys(models)) {
-                    if (modelName !== defaultModel) {
-                        console.log(`- ${modelName}`);
+                
+                // 过滤掉默认模型，不允许删除
+                const availableModels = Object.keys(models)
+                    .filter(name => name !== defaultModel);
+                
+                if (availableModels.length === 0) {
+                    console.log('没有可以删除的模型（不能删除默认模型）');
+                    break;
+                }
+                
+                // 添加一个取消选项
+                const choices = [
+                    ...availableModels,
+                    new inquirer.Separator(),
+                    '返回'
+                ];
+                
+                const { modelToRemove } = await inquirer.prompt([
+                    {
+                        type: 'list',
+                        name: 'modelToRemove',
+                        message: '选择要删除的模型:',
+                        choices: choices
                     }
+                ]);
+                
+                if (modelToRemove === '返回') {
+                    break;
                 }
-
-                const modelToRemove = await question('\n输入要删除的模型名称 (或按回车返回): ');
-                if (!modelToRemove.trim()) {
-                    continue;
-                }
-
-                if (modelToRemove.trim() === defaultModel) {
-                    console.log(`错误: 无法删除默认模型 '${modelToRemove}'`);
-                    continue;
-                }
-
-                if (!(modelToRemove.trim() in models)) {
-                    console.log(`错误: 模型 '${modelToRemove}' 不存在`);
-                    continue;
-                }
-
-                const confirmRemove = await question(`确认删除模型 '${modelToRemove}'? [y/N]: `);
-                if (confirmRemove.trim().toLowerCase() === 'y') {
-                    const removeResult = config.removeModel(modelToRemove.trim());
+                
+                const { confirmRemove } = await inquirer.prompt([
+                    {
+                        type: 'confirm',
+                        name: 'confirmRemove',
+                        message: `确认删除模型 '${modelToRemove}'?`,
+                        default: false
+                    }
+                ]);
+                
+                if (confirmRemove) {
+                    const removeResult = config.removeModel(modelToRemove);
                     if (removeResult) {
                         console.log(`已成功删除模型 '${modelToRemove}'`);
                     } else {
@@ -132,31 +160,33 @@ export async function interactiveConfig(): Promise<void> {
             }
 
             case '3': {
+                // 设置默认模型
                 const availableModels = Object.keys(config.getSupportedModels());
                 const currentDefault = config.getDefaultModel();
-
-                console.log('\n可用模型:');
-                for (const modelName of availableModels) {
-                    const mark = modelName === currentDefault ? ' (当前默认)' : '';
-                    console.log(`- ${modelName}${mark}`);
-                }
-
-                const newDefault = await question('\n输入要设为默认的模型名称 (或按回车返回): ');
-                if (!newDefault.trim()) {
-                    continue;
-                }
-
-                if (!(newDefault.trim() in config.getSupportedModels())) {
-                    console.log(`错误: 模型 '${newDefault}' 不存在`);
-                    continue;
-                }
-
-                if (newDefault.trim() === currentDefault) {
+                
+                // 为模型添加标记，显示当前默认
+                const choices = availableModels.map(name => ({
+                    name: name === currentDefault ? `${name} (当前默认)` : name,
+                    value: name,
+                    short: name
+                }));
+                
+                const { newDefault } = await inquirer.prompt([
+                    {
+                        type: 'list',
+                        name: 'newDefault',
+                        message: '选择要设为默认的模型:',
+                        choices: choices,
+                        default: currentDefault
+                    }
+                ]);
+                
+                if (newDefault === currentDefault) {
                     console.log(`'${newDefault}' 已经是默认模型`);
-                    continue;
+                    break;
                 }
-
-                const setDefaultResult = config.setDefaultModel(newDefault.trim());
+                
+                const setDefaultResult = config.setDefaultModel(newDefault);
                 if (setDefaultResult) {
                     console.log(`已将 '${newDefault}' 设置为默认模型`);
                 } else {
@@ -170,14 +200,8 @@ export async function interactiveConfig(): Promise<void> {
                 continueLoop = false;
                 break;
             }
-
-            default:
-                console.log('无效的选择，请输入 1-4 之间的数字');
-                break;
         }
     }
-
-    rl.close();
 }
 
 /**

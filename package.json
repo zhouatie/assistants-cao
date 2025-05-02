@@ -25,6 +25,7 @@
     "author": "",
     "license": "MIT",
     "devDependencies": {
+        "@types/inquirer": "^9.0.7",
         "@types/jest": "^29.5.10",
         "@types/node": "^20.10.0",
         "@typescript-eslint/eslint-plugin": "^6.12.0",
@@ -41,7 +42,9 @@
         "chalk": "^4.1.2",
         "commander": "^11.1.0",
         "dotenv": "^16.3.1",
+        "inquirer": "^8.2.6",
         "node-fetch": "^2.7.0",
         "prompts": "^2.4.2"
-    }
+    },
+    "packageManager": "yarn@1.22.19+sha1.4ba7fc5c6e704fce2066ecbfb0b0d8976fe62447"
 }

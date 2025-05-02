@@ -71,18 +71,15 @@ export function loadConfig(): Config {
         try {
             const userConfig = JSON.parse(fs.readFileSync(configFile, 'utf8'));
 
-            // 合并默认配置与用户配置
-            const config = { ...DEFAULT_CONFIG };
-
-            if ('models' in userConfig) {
-                config.models = { ...config.models, ...userConfig.models };
+            // 验证用户配置
+            if (!userConfig.models || !userConfig.default_model) {
+                console.log('配置文件格式不正确，正在重置为默认配置...');
+                saveConfig(DEFAULT_CONFIG);
+                return DEFAULT_CONFIG;
             }
 
-            if ('default_model' in userConfig && userConfig.default_model in config.models) {
-                config.default_model = userConfig.default_model;
-            }
-
-            return config;
+            // 直接使用用户配置，不合并默认配置
+            return userConfig;
         } catch (e) {
             console.error(`加载配置文件错误: ${(e as Error).message}`);
             return DEFAULT_CONFIG;
@@ -103,7 +100,9 @@ export function saveConfig(config: Config): boolean {
     const configFile = getConfigFile();
 
     try {
+        console.log(`正在保存配置到 ${configFile}...`);
         fs.writeFileSync(configFile, JSON.stringify(config, null, 2));
+        console.log('配置保存成功');
         return true;
     } catch (e) {
         console.error(`保存配置文件错误: ${(e as Error).message}`);
@@ -149,17 +148,32 @@ export function removeModel(name: string): boolean {
 
     // 检查模型是否存在
     if (!(name in config.models)) {
+        console.log(`模型 '${name}' 不存在于配置中`);
         return false;
     }
 
     // 检查是否是默认模型
     if (name === config.default_model) {
+        console.log(`不能删除默认模型 '${name}'`);
         return false;
     }
 
+    console.log(`正在删除模型 '${name}'...`);
+    
     // 删除模型
     delete config.models[name];
-    return saveConfig(config);
+    
+    // 确保配置已保存
+    const result = saveConfig(config);
+    
+    // 验证删除是否成功
+    const updatedConfig = loadConfig();
+    const isDeleted = !(name in updatedConfig.models);
+    
+    console.log(`删除模型 ${isDeleted ? '成功' : '失败'}`);
+    
+    // 返回删除操作的结果
+    return isDeleted;
 }
 
 /**
@@ -185,6 +199,7 @@ export function setDefaultModel(name: string): boolean {
  * @returns 模型配置对象
  */
 export function getSupportedModels(): { [key: string]: ModelConfig } {
+    // 每次都重新读取配置文件，确保获取最新数据
     const config = loadConfig();
     return config.models;
 }
@@ -194,6 +209,7 @@ export function getSupportedModels(): { [key: string]: ModelConfig } {
  * @returns 默认模型名称
  */
 export function getDefaultModel(): string {
+    // 每次都重新读取配置文件，确保获取最新数据
     const config = loadConfig();
     return config.default_model;
 }
