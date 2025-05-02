@@ -29,10 +29,10 @@ export function main(): void {
         debug('调试模式已启用');
     }
 
-    // 如果用户请求配置，则运行配置界面
+    // 如果用户请求配置，则运行增强版配置界面
     if (options.config) {
         // 使用import语法替代require
-        import('../config_cli').then(async configCli => {
+        import('../config_cli_new').then(async configCli => {
             await configCli.interactiveConfig();
             process.exit(0);
         });
