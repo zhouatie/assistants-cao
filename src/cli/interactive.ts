@@ -8,6 +8,7 @@ import { ModelConfig, Message } from '../types';
 import { debug, error } from '../utils/logger';
 import { printWithBorders } from '../utils/terminal';
 import { callAiApi } from '../ai_client';
+import * as calendarService from '../services/calendar';
 
 // 定义角色配置接口
 interface RoleConfig {
@@ -101,6 +102,16 @@ export function handleInteractiveSession(modelConfig: ModelConfig): void {
       4. 提供生活和工作建议
       5. 情感支持和积极鼓励
 
+      当用户要求你创建日程时，你应该提取以下信息：
+      - 日程标题/主题
+      - 日期和时间
+      - 地点(如有)
+      - 描述/备注(如有)
+      
+      然后你会调用系统的日历API来创建日程。创建成功后，向用户确认日程已创建。
+      
+      当用户询问日程时，你应该调用系统的日历API来查询符合条件的日程，并以清晰易读的方式展示给用户。
+
       请以体贴、专业、高效的方式帮助用户处理各种生活和工作上的事务，提供实用的建议和解决方案。
       `,
             greeting:
@@ -142,10 +153,10 @@ export function handleInteractiveSession(modelConfig: ModelConfig): void {
     function displayPrompt() {
         // 使用ANSI转义序列设置光标位置和文本
         const prompt = chalk.cyan.bold(`cao ${roles[currentRole].emoji} > `);
-        
+
         // 清除当前行并显示提示符
         process.stdout.write('\r\x1b[K' + prompt);
-        
+
         // 为了防止用户删除提示符，使用readline的setPrompt功能
         rl.setPrompt(prompt);
     }
@@ -186,7 +197,7 @@ export function handleInteractiveSession(modelConfig: ModelConfig): void {
         // 关闭打印动画效果，直接打印全部内容，避免前面的字符丢失
         console.log(response);
         console.log(''); // 额外的空行
-        
+
         // 确保显示提示符
         setTimeout(() => {
             displayPrompt();
@@ -339,11 +350,67 @@ export function handleInteractiveSession(modelConfig: ModelConfig): void {
             const aiResponse = await callAiApi(modelConfig, conversationContext);
             loadingStatus.value = true;
 
+            // 检查是否与secretary角色对话，且响应中包含日历操作意图
+            let finalResponse = aiResponse;
+            if (currentRole === 'secretary') {
+                // 简单的意图检测
+                if (
+                    userInput.toLowerCase().includes('创建日程') ||
+                    userInput.toLowerCase().includes('添加日程')
+                ) {
+                    // 尝试从用户输入中提取日程信息
+                    const eventInfo = calendarService.extractEventInfo(userInput);
+                    if (eventInfo) {
+                        try {
+                            // 调用日历服务创建事件
+                            await calendarService.createCalendarEvent(
+                                eventInfo.title,
+                                eventInfo.date,
+                                eventInfo.description,
+                                eventInfo.location
+                            );
+                            // 将创建结果附加到AI响应
+                            finalResponse += `\n\n✅ 日程已创建：${eventInfo.title} (${new Date(eventInfo.date).toLocaleString('zh-CN')})`;
+                            if (eventInfo.location) {
+                                finalResponse += ` 地点：${eventInfo.location}`;
+                            }
+                        } catch (error) {
+                            finalResponse += `\n\n❌ 日程创建失败：${(error as Error).message}`;
+                        }
+                    }
+                } else if (
+                    userInput.toLowerCase().includes('查看日程') ||
+                    userInput.toLowerCase().includes('我的日程')
+                ) {
+                    try {
+                        // 获取日历事件
+                        const events = await calendarService.listCalendarEvents();
+                        if (events && events.length > 0) {
+                            finalResponse += '\n\n📅 您的日程安排：\n';
+                            events.forEach(event => {
+                                finalResponse += `- ${event.title}: ${new Date(event.date).toLocaleString('zh-CN')}`;
+                                if (event.location) {
+                                    finalResponse += ` (地点: ${event.location})`;
+                                }
+                                if (event.description) {
+                                    finalResponse += ` [${event.description}]`;
+                                }
+                                finalResponse += '\n';
+                            });
+                        } else {
+                            finalResponse += '\n\n📅 您近期没有日程安排。';
+                        }
+                    } catch (error) {
+                        finalResponse += `\n\n❌ 获取日程失败：${(error as Error).message}`;
+                    }
+                }
+            }
+
             // 添加AI响应到上下文
-            conversationContext.push({ role: 'assistant', content: aiResponse });
+            conversationContext.push({ role: 'assistant', content: finalResponse });
 
             // 打印当前角色名称和AI响应，采用聊天风格显示
-            displayAiResponse(aiResponse, roles[currentRole].name, roles[currentRole].emoji);
+            displayAiResponse(finalResponse, roles[currentRole].name, roles[currentRole].emoji);
         } catch (e) {
             loadingStatus.value = true;
             error(`AI API调用出错: ${(e as Error).toString()}`);
