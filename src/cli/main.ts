@@ -20,7 +20,7 @@ export function main(): void {
     const program = new Command();
     parseArgs(program);
     const options = program.opts();
-    
+
     // 如果设置了调试标志，则设置环境变量以便在整个执行过程中使用
     if (options.debug) {
         process.env.CAO_DEBUG_MODE = '1';
@@ -28,7 +28,7 @@ export function main(): void {
         logger.level = 'debug';
         debug('调试模式已启用');
     }
-    
+
     // 如果用户请求列出模型，则显示所有配置的模型
     if (options.listModels) {
         import('../commands/list_models').then(modelsList => {
@@ -41,13 +41,13 @@ export function main(): void {
     // 如果用户请求配置，则运行增强版配置界面
     if (options.config) {
         // 使用import语法替代require
-        import('../config_cli_new').then(async configCli => {
+        import('../config_cli').then(async configCli => {
             await configCli.interactiveConfig();
             process.exit(0);
         });
         return;
     }
-    
+
     // 如果用户提供了直接提示，则处理单次AI交互
     if (options.prompt) {
         // 初始化模型配置
